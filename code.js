@@ -34,6 +34,13 @@ function drawField() {
   for(let i = 0; i < strings; i++) {
     for(let j = 0; j < columns; j++) {
       if(map[i][j] == 1) {
+        context.fillStyle = "black";
+        context.fillRect(j*5, i*5, 5, 5);
+      } else if(map[i][j] == 2) {
+        context.fillStyle = "red";
+        context.fillRect(j*5, i*5, 5, 5);
+      } else if(map[i][j] == 3) {
+        context.fillStyle = "green";
         context.fillRect(j*5, i*5, 5, 5);
       }
     }
@@ -45,23 +52,65 @@ function startLife() {
   for(let i = 0; i < strings; i++) {
     map2[i] = [];
     for(let j = 0; j < columns; j++) {
-      let neighbors = 0;
-      if(map[fpm(i)-1][j] == 1) neighbors++; // поиск соседей сверху
-      if(map[i][fpp(j)+1] == 1) neighbors++; // поиск соседей справа
-      if(map[fpp(i)+1][j] == 1) neighbors++; // поиск соседей снизу
-      if(map[i][fpm(j)-1] == 1) neighbors++; // поиск соседей слева
-      if(map[fpm(i)-1][fpp(j)+1] == 1) neighbors++;
-      if(map[fpp(i)+1][fpp(j)+1] == 1) neighbors++;
-      if(map[fpp(i)+1][fpm(j)-1] == 1) neighbors++;
-      if(map[fpm(i)-1][fpm(j)-1] == 1) neighbors++;
+      let aliveNeighbors = 0;
+      let infectedNeighbors = 0;
+      let immunedNeighbors = 0;
 
-      if(neighbors == 3) {
-        map2[i][j] = 1;
-      } else if(neighbors == 2 || neighbors == 3) {
-        map2[i][j] = map[i][j];
-      } else if(neighbors < 2 || neighbors > 3) {
+      if(map[fpm(i)-1][j] == 1) aliveNeighbors++; // поиск соседей сверху
+      if(map[i][fpp(j)+1] == 1) aliveNeighbors++; // поиск соседей справа
+      if(map[fpp(i)+1][j] == 1) aliveNeighbors++; // поиск соседей снизу
+      if(map[i][fpm(j)-1] == 1) aliveNeighbors++; // поиск соседей слева
+      if(map[fpm(i)-1][fpp(j)+1] == 1) aliveNeighbors++;
+      if(map[fpp(i)+1][fpp(j)+1] == 1) aliveNeighbors++;
+      if(map[fpp(i)+1][fpm(j)-1] == 1) aliveNeighbors++;
+      if(map[fpm(i)-1][fpm(j)-1] == 1) aliveNeighbors++;
+
+      if(map[fpm(i)-1][j] == 2) infectedNeighbors++; // поиск больных соседей сверху
+      if(map[i][fpp(j)+1] == 2) infectedNeighbors++; // поиск больных соседей справа
+      if(map[fpp(i)+1][j] == 2) infectedNeighbors++; // поиск больных соседей снизу
+      if(map[i][fpm(j)-1] == 2) infectedNeighbors++; // поиск больных соседей слева
+      if(map[fpm(i)-1][fpp(j)+1] == 2) infectedNeighbors++;
+      if(map[fpp(i)+1][fpp(j)+1] == 2) infectedNeighbors++;
+      if(map[fpp(i)+1][fpm(j)-1] == 2) infectedNeighbors++;
+      if(map[fpm(i)-1][fpm(j)-1] == 2) infectedNeighbors++;
+
+      if(map[fpm(i)-1][j] == 3) immunedNeighbors++; // поиск соседей с иммунитетом сверху
+      if(map[i][fpp(j)+1] == 3) immunedNeighbors++; // поиск соседей с иммунитетом справа
+      if(map[fpp(i)+1][j] == 3) immunedNeighbors++; // поиск соседей с иммунитетом снизу
+      if(map[i][fpm(j)-1] == 3) immunedNeighbors++; // поиск соседей с иммунитетом слева
+      if(map[fpm(i)-1][fpp(j)+1] == 3) immunedNeighbors++;
+      if(map[fpp(i)+1][fpp(j)+1] == 3) immunedNeighbors++;
+      if(map[fpp(i)+1][fpm(j)-1] == 3) immunedNeighbors++;
+      if(map[fpm(i)-1][fpm(j)-1] == 3) immunedNeighbors++;
+
+      if(aliveNeighbors == 3) {
+        if(infectedNeighbors == 0) {
+          if(immunedNeighbors == 0) {
+            map2[i][j] = 1; // в клетке зарождается жизнь
+          } else {
+            map2[i][j] = 3; // в клетке зарождается жизнь и она становится иммунной к вирусу
+          }
+        } else {
+          if(map[i][j] == 3) {
+            map2[i][j] == 1; // клетка теряет иммунитет и остается жива
+          } else {
+            map2[i][j] = 2; // клетка становится больной
+          }
+        }
+      } else if(aliveNeighbors == 2 || aliveNeighbors == 3) {
+        if(infectedNeighbors == 0) {
+          if(immunedNeighbors == 0) {
+            map2[i][j] = 1; // клетка остается жива и не больна
+          } else {
+            map2[i][j] = 3 // клетка приобретает иммунитет
+          }
+        } else {
+          map2[i][j] = 2; // клетка остается жива и заражается
+        }
+      } else if(aliveNeighbors < 2 || aliveNeighbors > 3) {
         map2[i][j] = 0;
       }
+
     }
   }
   map = map2;
@@ -82,9 +131,16 @@ function fpp(i) {
 function placeLife() {
   for(let i = 0; i < strings; i++) {
     for(let j = 0; j < columns; j++) {
-      map[i][j] = Math.round(Math.random());
+      map[i][j] = Math.round(Math.random(0,1));
     }
   }
+  let virusStr = Math.round(Math.random(0, 1) * map.length);
+  let virusCol = Math.round(Math.random(0, 1) * map.length);
+  map[virusStr][virusCol] = 2;
+  let immunedStr = Math.round(Math.random(0, 1) * map.length);
+  let immunedCol = Math.round(Math.random(0, 1) * map.length);
+  map[immunedStr][immunedCol] = 3;
+
   drawField();
 }
 
